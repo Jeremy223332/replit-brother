@@ -9,7 +9,7 @@ app.use(express.json());
 
 // Initialize Anthropic client using the environment variable on Render
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: process.env.ANTHROPIC_API_KEY || '',
 });
 
 // Front-End Web UI
@@ -197,7 +197,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Claude API Route
+// Claude API Route with explicit Authentication Check and Detailed Error Messaging
 app.post('/api/chat', async (req, res) => {
   const { message } = req.body;
 
@@ -205,8 +205,12 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ reply: 'Please send a valid message.' });
   }
 
+  // Check if API key variable exists
   if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(500).json({ reply: 'ANTHROPIC_API_KEY is missing in Render environment variables.' });
+    console.error('Authentication Error: ANTHROPIC_API_KEY environment variable is missing.');
+    return res.status(500).json({ 
+      reply: 'Authentication Error: ANTHROPIC_API_KEY is not set in Render environment variables.' 
+    });
   }
 
   try {
@@ -218,8 +222,11 @@ app.post('/api/chat', async (req, res) => {
 
     res.json({ reply: response.content[0].text });
   } catch (error) {
-    console.error('Claude API Error:', error);
-    res.status(500).json({ reply: 'Failed to process request with AI backend.' });
+    console.error('Claude API Error Details:', error);
+    
+    // Pass precise Anthropic authentication / credit error to the response
+    const detailedMessage = error.message || 'Failed to authenticate or process request with Claude.';
+    res.status(500).json({ reply: `API Error: ${detailedMessage}` });
   }
 });
 
