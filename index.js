@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Initialize Anthropic client using the key set in Render
+// Initialize Anthropic client using the environment variable on Render
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
@@ -54,7 +54,16 @@ app.get('/', (req, res) => {
           align-items: center;
           justify-content: space-between;
         }
-        .chat-header h1 { font-size: 1.2rem; color: #d97706; }
+        .brand {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .chat-header h1 { 
+          font-size: 1.2rem; 
+          color: #f8fafc;
+          letter-spacing: -0.02em;
+        }
         .chat-messages {
           flex: 1;
           padding: 20px;
@@ -117,8 +126,27 @@ app.get('/', (req, res) => {
     <body>
       <div class="chat-container">
         <div class="chat-header">
-          <h1>Replit Brother • Claude Chat</h1>
-          <span style="font-size: 0.85rem; color: #94a3b8;">Powered by Anthropic</span>
+          <div class="brand">
+            <!-- Replit + Claude Hybrid Logo SVG -->
+            <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Claude Style Warm Amber Outer Circle -->
+              <circle cx="50" cy="50" r="48" fill="#D97706" />
+              
+              <!-- Replit Style Blocky "R" Emblem in Center -->
+              <g fill="#0F172A">
+                <!-- Top left block -->
+                <rect x="28" y="28" width="18" height="18" rx="3" />
+                <!-- Top right block -->
+                <rect x="50" y="28" width="18" height="18" rx="3" />
+                <!-- Middle left block -->
+                <rect x="28" y="50" width="18" height="18" rx="3" />
+                <!-- Bottom right leg block -->
+                <rect x="50" y="50" width="18" height="22" rx="3" />
+              </g>
+            </svg>
+            <h1>Replit Brother</h1>
+          </div>
+          <span style="font-size: 0.85rem; color: #94a3b8;">Powered by Claude</span>
         </div>
 
         <div class="chat-messages" id="chatBox">
@@ -176,7 +204,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Claude API Endpoint
+// Claude API Route
 app.post('/api/chat', async (req, res) => {
   const { message } = req.body;
 
@@ -204,19 +232,3 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-<svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Claude Style Warm Amber Outer Circle -->
-  <circle cx="50" cy="50" r="48" fill="#D97706" />
-  
-  <!-- Replit Style Blocky "R" Emblem in Center -->
-  <g fill="#0F172A">
-    <!-- Top left block -->
-    <rect x="28" y="28" width="18" height="18" rx="3" />
-    <!-- Top right block -->
-    <rect x="50" y="28" width="18" height="18" rx="3" />
-    <!-- Middle left block -->
-    <rect x="28" y="50" width="18" height="18" rx="3" />
-    <!-- Bottom right leg block -->
-    <rect x="50" y="50" width="18" height="22" rx="3" />
-  </g>
-</svg>
