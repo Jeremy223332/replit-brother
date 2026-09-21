@@ -1,7 +1,7 @@
 {
   "name": "replit-brother",
   "version": "1.0.0",
-  "description": "Backend streaming and proxy server",
+  "description": "Backend streaming and proxy service",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
