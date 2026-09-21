@@ -204,3 +204,19 @@ app.post('/api/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+<svg width="48" height="48" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Claude Style Warm Amber Outer Circle -->
+  <circle cx="50" cy="50" r="48" fill="#D97706" />
+  
+  <!-- Replit Style Blocky "R" Emblem in Center -->
+  <g fill="#0F172A">
+    <!-- Top left block -->
+    <rect x="28" y="28" width="18" height="18" rx="3" />
+    <!-- Top right block -->
+    <rect x="50" y="28" width="18" height="18" rx="3" />
+    <!-- Middle left block -->
+    <rect x="28" y="50" width="18" height="18" rx="3" />
+    <!-- Bottom right leg block -->
+    <rect x="50" y="50" width="18" height="22" rx="3" />
+  </g>
+</svg>
