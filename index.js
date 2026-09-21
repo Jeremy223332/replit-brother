@@ -1,16 +1,10 @@
 const express = require('express');
 const cors = require('cors');
-const Anthropic = require('@anthropic-ai/sdk');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-// Initialize Anthropic client using the environment variable on Render
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-});
 
 // Front-End Web UI
 app.get('/', (req, res) => {
@@ -139,11 +133,11 @@ app.get('/', (req, res) => {
             </svg>
             <h1>Replit Brother</h1>
           </div>
-          <span style="font-size: 0.85rem; color: #94a3b8;">AI Assistant</span>
+          <span style="font-size: 0.85rem; color: #94a3b8;">Powered by DeepSeek</span>
         </div>
 
         <div class="chat-messages" id="chatBox">
-          <div class="message bot">Hello! I'm Replit's Brother AND Claude's Brother! How may I help?</div>
+          <div class="message bot">Hello! I'm Replit's Brother AND DeepSeek's Brother! How may I help?</div>
         </div>
 
         <form class="chat-input-area" id="chatForm">
@@ -185,7 +179,7 @@ app.get('/', (req, res) => {
             const data = await res.json();
             appendMessage(data.reply, 'bot');
           } catch (err) {
-            appendMessage("Error communicating with AI backend.", 'bot');
+            appendMessage("Error communicating with DeepSeek backend.", 'bot');
           } finally {
             sendBtn.disabled = false;
             sendBtn.innerText = 'Send';
@@ -197,7 +191,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Claude API Route with explicit Authentication Check and Detailed Error Messaging
+// DeepSeek API Route
 app.post('/api/chat', async (req, res) => {
   const { message } = req.body;
 
@@ -205,28 +199,34 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ reply: 'Please send a valid message.' });
   }
 
-  // Check if API key variable exists
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('Authentication Error: ANTHROPIC_API_KEY environment variable is missing.');
-    return res.status(500).json({ 
-      reply: 'Authentication Error: ANTHROPIC_API_KEY is not set in Render environment variables.' 
-    });
+  if (!process.env.DEEPSEEK_API_KEY) {
+    return res.status(500).json({ reply: 'DEEPSEEK_API_KEY is missing in Render environment variables.' });
   }
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: message }],
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [{ role: 'user', content: message }]
+      })
     });
 
-    res.json({ reply: response.content[0].text });
+    const data = await response.json();
+
+    if (!response.ok) {
+      const errDetail = data.error ? data.error.message : 'API Request failed';
+      return res.status(response.status).json({ reply: `DeepSeek API Error: ${errDetail}` });
+    }
+
+    res.json({ reply: data.choices[0].message.content });
   } catch (error) {
-    console.error('Claude API Error Details:', error);
-    
-    // Pass precise Anthropic authentication / credit error to the response
-    const detailedMessage = error.message || 'Failed to authenticate or process request with Claude.';
-    res.status(500).json({ reply: `API Error: ${detailedMessage}` });
+    console.error('DeepSeek Server Error:', error);
+    res.status(500).json({ reply: 'Failed to process request with DeepSeek backend.' });
   }
 });
 
