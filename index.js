@@ -1,16 +1,18 @@
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
+const Anthropic = require('@anthropic-ai/sdk');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Memory store for the active ERLC API Key
-let currentErlcKey = process.env.ERLC_API_KEY || '';
+// Initialize Anthropic client using the key set in Render
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
-// Main Web Dashboard with Input Form
+// Front-End Web UI
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -18,7 +20,7 @@ app.get('/', (req, res) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Replit Brother • ERLC Setup</title>
+      <title>Replit Brother • Claude AI</title>
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -31,105 +33,141 @@ app.get('/', (req, res) => {
           min-height: 100vh;
           padding: 20px;
         }
-        .card {
+        .chat-container {
           background: #1e293b;
           border: 1px solid #334155;
           border-radius: 12px;
-          padding: 32px;
-          max-width: 500px;
           width: 100%;
-          box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+          max-width: 650px;
+          height: 80vh;
+          max-height: 700px;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4);
+          overflow: hidden;
         }
-        h1 { color: #38bdf8; font-size: 1.6rem; margin-bottom: 8px; }
-        p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px; }
-        label { display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px; font-weight: 600; }
-        input[type="text"] {
-          width: 100%;
-          padding: 12px;
+        .chat-header {
+          padding: 16px 20px;
           background: #0f172a;
-          border: 1px solid #334155;
-          border-radius: 6px;
+          border-bottom: 1px solid #334155;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .chat-header h1 { font-size: 1.2rem; color: #d97706; }
+        .chat-messages {
+          flex: 1;
+          padding: 20px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .message {
+          max-width: 85%;
+          padding: 12px 16px;
+          border-radius: 10px;
+          font-size: 0.95rem;
+          line-height: 1.5;
+          white-space: pre-wrap;
+        }
+        .message.user {
+          align-self: flex-end;
+          background: #d97706;
           color: #fff;
-          font-size: 0.9rem;
-          margin-bottom: 16px;
+          border-bottom-right-radius: 2px;
+        }
+        .message.bot {
+          align-self: flex-start;
+          background: #334155;
+          color: #f1f5f9;
+          border-bottom-left-radius: 2px;
+        }
+        .chat-input-area {
+          padding: 16px;
+          background: #0f172a;
+          border-top: 1px solid #334155;
+          display: flex;
+          gap: 10px;
+        }
+        input[type="text"] {
+          flex: 1;
+          padding: 12px 16px;
+          background: #1e293b;
+          border: 1px solid #334155;
+          border-radius: 8px;
+          color: #fff;
+          font-size: 0.95rem;
           outline: none;
         }
-        input[type="text"]:focus { border-color: #38bdf8; }
+        input[type="text"]:focus { border-color: #d97706; }
         button {
-          width: 100%;
-          padding: 12px;
-          background: #0284c7;
+          padding: 12px 20px;
+          background: #d97706;
           border: none;
-          border-radius: 6px;
+          border-radius: 8px;
           color: #fff;
           font-weight: 600;
           cursor: pointer;
-          transition: background 0.2s;
         }
-        button:hover { background: #0369a1; }
-        .status {
-          margin-top: 16px;
-          padding: 10px;
-          border-radius: 6px;
-          font-size: 0.85rem;
-          display: none;
-        }
-        .success { background: #064e3b; color: #34d399; }
-        .error { background: #7f1d1d; color: #fca5a5; }
-        .active-key {
-          margin-top: 20px;
-          padding-top: 16px;
-          border-top: 1px solid #334155;
-          font-size: 0.8rem;
-          color: #64748b;
-        }
+        button:hover { background: #b45309; }
+        button:disabled { background: #475569; cursor: not-allowed; }
       </style>
     </head>
     <body>
-      <div class="card">
-        <h1>Connect ERLC Server</h1>
-        <p>Paste your Police Roleplay Community API Server Key below to connect your server.</p>
-        
-        <form id="keyForm">
-          <label for="apiKey">ERLC Server API Key</label>
-          <input type="text" id="apiKey" placeholder="Paste key here..." required />
-          <button type="submit">Save & Connect Key</button>
-        </form>
-
-        <div id="statusBox" class="status"></div>
-
-        <div class="active-key">
-          Current Key Status: <strong id="keyState">${currentErlcKey ? 'Key Connected' : 'No Key Set'}</strong>
+      <div class="chat-container">
+        <div class="chat-header">
+          <h1>Replit Brother • Claude Chat</h1>
+          <span style="font-size: 0.85rem; color: #94a3b8;">Powered by Anthropic</span>
         </div>
+
+        <div class="chat-messages" id="chatBox">
+          <div class="message bot">Hello! I'm Claude, running on your Replit Brother server. How can I help you today?</div>
+        </div>
+
+        <form class="chat-input-area" id="chatForm">
+          <input type="text" id="userInput" placeholder="Ask Claude anything..." autocomplete="off" required />
+          <button type="submit" id="sendBtn">Send</button>
+        </form>
       </div>
 
       <script>
-        document.getElementById('keyForm').addEventListener('submit', async (e) => {
+        const chatBox = document.getElementById('chatBox');
+        const chatForm = document.getElementById('chatForm');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function appendMessage(text, sender) {
+          const msgDiv = document.createElement('div');
+          msgDiv.className = 'message ' + sender;
+          msgDiv.innerText = text;
+          chatBox.appendChild(msgDiv);
+          chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
           e.preventDefault();
-          const key = document.getElementById('apiKey').value.trim();
-          const statusBox = document.getElementById('statusBox');
+          const text = userInput.value.trim();
+          if (!text) return;
+
+          appendMessage(text, 'user');
+          userInput.value = '';
+          sendBtn.disabled = true;
+          sendBtn.innerText = 'Thinking...';
 
           try {
-            const res = await fetch('/api/set-key', {
+            const res = await fetch('/api/chat', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ key })
+              body: JSON.stringify({ message: text })
             });
             const data = await res.json();
-
-            if (res.ok) {
-              statusBox.className = 'status success';
-              statusBox.innerText = 'Server key saved and logged successfully!';
-              statusBox.style.display = 'block';
-              document.getElementById('keyState').innerText = 'Key Connected';
-              document.getElementById('apiKey').value = '';
-            } else {
-              throw new Error(data.error);
-            }
+            appendMessage(data.reply, 'bot');
           } catch (err) {
-            statusBox.className = 'status error';
-            statusBox.innerText = err.message || 'Failed to save key.';
-            statusBox.style.display = 'block';
+            appendMessage("Error communicating with Claude backend.", 'bot');
+          } finally {
+            sendBtn.disabled = false;
+            sendBtn.innerText = 'Send';
           }
         });
       </script>
@@ -138,47 +176,31 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Endpoint to receive, store, and log the submitted API Key
-app.post('/api/set-key', (req, res) => {
-  const { key } = req.body;
-  
-  if (!key) {
-    return res.status(400).json({ error: 'Please provide a valid API key.' });
+// Claude API Endpoint
+app.post('/api/chat', async (req, res) => {
+  const { message } = req.body;
+
+  if (!message) {
+    return res.status(400).json({ reply: 'Please send a valid message.' });
   }
 
-  currentErlcKey = key;
-  
-  // Logs the key directly to Render server logs
-  console.log(`[ERLC KEY LOGGED]: Key received at ${new Date().toISOString()}`);
-  console.log(`[LOGGED KEY]: ${key}`);
-
-  res.json({ success: true, message: 'Key connected and logged successfully.' });
-});
-
-// Helper function to query ERLC API
-async function fetchErlc(endpoint, res) {
-  if (!currentErlcKey) {
-    return res.status(400).json({ error: 'No ERLC Server Key connected yet. Paste your key on the homepage.' });
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({ reply: 'ANTHROPIC_API_KEY is missing in Render environment variables.' });
   }
 
   try {
-    const response = await axios.get(`https://api.policeroleplay.community/v1${endpoint}`, {
-      headers: { 'Server-Key': currentErlcKey }
+    const response = await anthropic.messages.create({
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: message }],
     });
-    res.json(response.data);
-  } catch (err) {
-    res.status(err.response?.status || 500).json({
-      error: 'ERLC API Request Failed',
-      details: err.response?.data || err.message
-    });
-  }
-}
 
-// Sample API Routes using the logged/stored key
-app.get('/api/erlc/server', (req, res) => fetchErlc('/server', res));
-app.get('/api/erlc/players', (req, res) => fetchErlc('/server/players', res));
+    res.json({ reply: response.content[0].text });
+  } catch (error) {
+    console.error('Claude API Error:', error);
+    res.status(500).json({ reply: 'Failed to process request with Claude.' });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Replit Brother Server active on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
