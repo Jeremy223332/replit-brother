@@ -20,7 +20,7 @@ app.get('/', (req, res) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Replit Brother • Claude AI</title>
+      <title>Replit Brother • AI Assistant</title>
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -129,32 +129,25 @@ app.get('/', (req, res) => {
           <div class="brand">
             <!-- Replit + Claude Hybrid Logo SVG -->
             <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <!-- Claude Style Warm Amber Outer Circle -->
               <circle cx="50" cy="50" r="48" fill="#D97706" />
-              
-              <!-- Replit Style Blocky "R" Emblem in Center -->
               <g fill="#0F172A">
-                <!-- Top left block -->
                 <rect x="28" y="28" width="18" height="18" rx="3" />
-                <!-- Top right block -->
                 <rect x="50" y="28" width="18" height="18" rx="3" />
-                <!-- Middle left block -->
                 <rect x="28" y="50" width="18" height="18" rx="3" />
-                <!-- Bottom right leg block -->
                 <rect x="50" y="50" width="18" height="22" rx="3" />
               </g>
             </svg>
             <h1>Replit Brother</h1>
           </div>
-          <span style="font-size: 0.85rem; color: #94a3b8;">Powered by Claude</span>
+          <span style="font-size: 0.85rem; color: #94a3b8;">AI Assistant</span>
         </div>
 
         <div class="chat-messages" id="chatBox">
-          <div class="message bot">Hello! I'm Claude, running on your Replit Brother server. How can I help you today?</div>
+          <div class="message bot">Hello! I'm Replit's Brother AND Claude's Brother! How may I help?</div>
         </div>
 
         <form class="chat-input-area" id="chatForm">
-          <input type="text" id="userInput" placeholder="Ask Claude anything..." autocomplete="off" required />
+          <input type="text" id="userInput" placeholder="Ask anything..." autocomplete="off" required />
           <button type="submit" id="sendBtn">Send</button>
         </form>
       </div>
@@ -192,7 +185,7 @@ app.get('/', (req, res) => {
             const data = await res.json();
             appendMessage(data.reply, 'bot');
           } catch (err) {
-            appendMessage("Error communicating with Claude backend.", 'bot');
+            appendMessage("Error communicating with AI backend.", 'bot');
           } finally {
             sendBtn.disabled = false;
             sendBtn.innerText = 'Send';
@@ -226,7 +219,7 @@ app.post('/api/chat', async (req, res) => {
     res.json({ reply: response.content[0].text });
   } catch (error) {
     console.error('Claude API Error:', error);
-    res.status(500).json({ reply: 'Failed to process request with Claude.' });
+    res.status(500).json({ reply: 'Failed to process request with AI backend.' });
   }
 });
 
